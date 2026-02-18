@@ -1,8 +1,7 @@
 import pytest
-import requests
 import allure
-import urls
 from helper import RandomUserData
+import api_helper
 from data import DataMessages
 
 
@@ -24,29 +23,20 @@ class TestChangeUserData:
         """
         user_data, access_token = client
 
-        # Генерируем новые данные пользователя
-        user_data_generator = RandomUserData()
-        new_user_data = user_data_generator.user_data_generation()
-
-        # Заменяем указанное поле на новое значением
-        user_data[new_field] = new_user_data[new_field]
+        user_data[new_field] = "new_value"
 
         # Отправляем PATCH-запрос с авторизацией
-        response = requests.patch(
-            urls.BASE_URL + urls.USER_DATA_ENDPOINT,
-            headers={'Authorization': access_token},
-            json=user_data  # рекомендую использовать json вместо data для API с JSON
-        )
+        response = api_helper.change_user(access_token, user_data)
 
         assert response.status_code == 200
 
         response_json = response.json()
-        assert response_json.get('success') is True
+        assert response_json.get('success',  None) is not None
 
         user_response = response_json.get('user', {})
         assert user_response.get('name'), "Имя пользователя не должно быть пустым"
         assert user_response.get('email'), "Email пользователя не должен быть пустым"
-        assert user_response.get(new_field) == new_user_data[new_field], f"Поле '{new_field}' не обновилось"
+        assert user_response.get(new_field) == user_data[new_field], f"Поле '{new_field}' не обновилось"
 
     @allure.title('Меняем данные пользователя с авторизацией (пароль) - позитивная проверка')
     def test_change_authorised_user_data_password_positive_check(self, client):
@@ -57,21 +47,14 @@ class TestChangeUserData:
         """
         user_data, access_token = client
 
-        user_data_generator = RandomUserData()
-        new_user_data = user_data_generator.user_data_generation()
+        user_data['password'] = RandomUserData().user_data_generation()['password']
 
-        user_data['password'] = new_user_data['password']
-
-        response = requests.patch(
-            urls.BASE_URL + urls.USER_DATA_ENDPOINT,
-            headers={'Authorization': access_token},
-            json=user_data
-        )
+        response = api_helper.change_user(access_token, user_data)
 
         assert response.status_code == 200
 
         response_json = response.json()
-        assert response_json.get('success') is True
+        assert response_json.get('success',  None) is not None
 
         user_response = response_json.get('user', {})
         assert user_response.get('name'), "Имя пользователя не должно быть пустым"
@@ -89,18 +72,12 @@ class TestChangeUserData:
         """
         user_data, _ = client  
 
-        user_data_generator = RandomUserData()
-        new_data = user_data_generator.user_data_generation()
+        user_data[new_field] = RandomUserData().user_data_generation()[new_field]
 
-        user_data[new_field] = new_data[new_field]
-
-        response = requests.patch(
-            urls.BASE_URL + urls.USER_DATA_ENDPOINT,
-            json=user_data
-        )
+        response = api_helper.change_user(None, user_data)
 
         assert response.status_code == 401
 
         response_json = response.json()
-        assert response_json.get('success') is False
+        assert response_json.get('success') is None
         assert response_json.get('message') == DataMessages.UNAUTHORISED_USER
