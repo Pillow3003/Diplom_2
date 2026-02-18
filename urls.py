@@ -1,4 +1,4 @@
-BASE_URL = 'https://stellarburgers.nomoreparties.site/'
+BASE_URL = 'https://stellarburgers.education-services.ru/'
 
 REGISTRATION_USER_ENDPOINT = 'api/auth/register'
 
