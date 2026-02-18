@@ -1,0 +1,67 @@
+import allure
+from api_helper import create_new_order, create_list_ingredients
+from data import DataMessages
+
+
+class TestCreateOrder:
+    """
+    Тесты для проверки создания заказов через API.
+    Проверяется создание заказов авторизованными и неавторизованными пользователями,
+    а также негативные сценарии с некорректными данными.
+    """
+
+    @allure.title('Создаем заказ авторизованным пользователем - позитивная проверка')
+    def test_create_order_authorised_user_positive_check(self, client):
+        """
+        Проверка создания заказа авторизованным пользователем.
+
+        :param client: фикстура, возвращающая (user_data, access_token)
+        """
+        _, access_token = client
+
+        response = create_new_order(access_token, ingredients=create_list_ingredients())
+
+        assert response.status_code == 200
+
+        resp_json = response.json()
+        assert resp_json.get('name'), "В ответе отсутствует название заказа"
+        assert resp_json.get('order', {}).get('number'), "В заказе отсутствует номер"
+        assert resp_json.get('success') is True
+
+    @allure.title('Создаем заказ неавторизованным пользователем (гостем) - позитивная проверка')
+    def test_create_order_unauthorised_user_positive_check(self):
+        """
+        Проверка создания заказа неавторизованным (гостевым) пользователем.
+        """
+        response = create_new_order(access_token=None, ingredients=create_list_ingredients())
+
+        assert response.status_code == 200
+
+        resp_json = response.json()
+        assert resp_json.get('name'), "В ответе отсутствует название заказа"
+        assert resp_json.get('order', {}).get('number'), "В заказе отсутствует номер"
+        assert resp_json.get('success') is True
+
+    @allure.title('Создаем заказ без ингредиентов - негативная проверка')
+    def test_create_order_empty_ingredients_list_negative_check(self):
+        """
+        Проверка создания заказа с пустым списком ингредиентов.
+        Ожидается ошибка 400 и соответствующее сообщение об ошибке.
+        """
+        response = create_new_order(access_token=None, ingredients=[])
+
+        assert response.status_code == 400
+
+        resp_json = response.json()
+        assert resp_json.get('success') is False
+        assert resp_json.get('message') == DataMessages.CREATE_ORDER_EMPTY_INGREDIENTS
+
+    @allure.title('Создаем заказ с неверным хешем ингредиентов - негативная проверка')
+    def test_create_order_false_hash_ingredients_negative_check(self):
+        """
+        Проверка создания заказа с неправильным хешем ингредиентов.
+        """
+        order = {'ingredients': ['abracadabra100', 'superkalifragiristikexpialidoshes']}
+        response = create_new_order(access_token=None, ingredients=order)
+
+        assert response.status_code == 500
