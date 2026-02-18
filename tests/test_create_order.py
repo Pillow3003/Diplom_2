@@ -1,7 +1,5 @@
-import requests
 import allure
-import urls
-from api_helper import create_list_ingredients
+from api_helper import create_new_order, create_list_ingredients
 from data import DataMessages
 
 
@@ -21,12 +19,7 @@ class TestCreateOrder:
         """
         _, access_token = client
 
-        order = {'ingredients': create_list_ingredients()}
-        response = requests.post(
-            urls.BASE_URL + urls.ORDERS_ENDPOINT,
-            headers={'Authorization': access_token},
-            json=order  # Используем json, а не data
-        )
+        response = create_new_order(access_token, ingredients=create_list_ingredients())
 
         assert response.status_code == 200
 
@@ -40,11 +33,7 @@ class TestCreateOrder:
         """
         Проверка создания заказа неавторизованным (гостевым) пользователем.
         """
-        order = {'ingredients': create_list_ingredients()}
-        response = requests.post(
-            urls.BASE_URL + urls.ORDERS_ENDPOINT,
-            json=order
-        )
+        response = create_new_order(access_token=None, ingredients=create_list_ingredients())
 
         assert response.status_code == 200
 
@@ -59,11 +48,7 @@ class TestCreateOrder:
         Проверка создания заказа с пустым списком ингредиентов.
         Ожидается ошибка 400 и соответствующее сообщение об ошибке.
         """
-        order = {'ingredients': []}
-        response = requests.post(
-            urls.BASE_URL + urls.ORDERS_ENDPOINT,
-            json=order
-        )
+        response = create_new_order(access_token=None, ingredients=[])
 
         assert response.status_code == 400
 
@@ -77,9 +62,6 @@ class TestCreateOrder:
         Проверка создания заказа с неправильным хешем ингредиентов.
         """
         order = {'ingredients': ['abracadabra100', 'superkalifragiristikexpialidoshes']}
-        response = requests.post(
-            urls.BASE_URL + urls.ORDERS_ENDPOINT,
-            json=order
-        )
+        response = create_new_order(access_token=None, ingredients=order)
 
         assert response.status_code == 500
