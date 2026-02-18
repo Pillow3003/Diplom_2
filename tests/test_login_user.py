@@ -1,7 +1,6 @@
 import pytest
-import requests
 import allure
-import urls
+import api_helper
 from data import DataMessages
 import copy
 
@@ -21,10 +20,7 @@ class TestLoginUser:
         """
         user_data = client[0]
 
-        response = requests.post(
-            urls.BASE_URL + urls.LOGIN_USER_ENDPOINT,
-            json=user_data  
-        )
+        response = api_helper.login_user(user_data)
 
         assert response.status_code == 200, f"Ожидался статус 200, получен {response.status_code}"
 
@@ -47,13 +43,10 @@ class TestLoginUser:
         :param client: фикстура с user_data
         :param mistake_field: поле, которое специально искажается ('email' или 'password')
         """
-        original_user_data = copy.deepcopy(client[0])
-        original_user_data[mistake_field] = original_user_data[mistake_field] + '1'
+        invalid_user_data = copy.deepcopy(client[0])
+        invalid_user_data[mistake_field] = invalid_user_data[mistake_field] + '1'
 
-        response = requests.post(
-            urls.BASE_URL + urls.LOGIN_USER_ENDPOINT,
-            json=original_user_data
-        )
+        response = api_helper.login_user(invalid_user_data)
 
         assert response.status_code == 401, f"Ожидался статус 401, получен {response.status_code}"
 
