@@ -1,6 +1,5 @@
-import requests
 import allure
-import urls
+import api_helper
 from data import DataMessages
 
 
@@ -18,10 +17,7 @@ class TestGetUserOrder:
         """
         _, access_token = client
 
-        response = requests.get(
-            urls.BASE_URL + urls.ORDERS_ENDPOINT,
-            headers={'Authorization': access_token}
-        )
+        response = api_helper.get_orders(access_token)
 
         assert response.status_code == 200, f"Ожидался статус 200, получен {response.status_code}"
 
@@ -41,7 +37,7 @@ class TestGetUserOrder:
         """
         Проверяет, что получение заказов без авторизации возвращает ошибку 401.
         """
-        response = requests.get(urls.BASE_URL + urls.ORDERS_ENDPOINT)
+        response = api_helper.get_orders(access_token=None)
 
         assert response.status_code == 401, f"Ожидался статус 401, получен {response.status_code}"
 
